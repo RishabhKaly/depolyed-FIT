@@ -33,29 +33,21 @@
 
 
 
-# Use the official Python 3.12 slim image
+# Use the official Python image
 FROM python:3.12-slim
 
-# Set the working directory in the container
-WORKDIR /app
+# Change WORKDIR to /app/app so "static" is found at /app/app/static
+WORKDIR /app/app
 
-# Copy in your requirements and install
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt ../
+RUN pip install --no-cache-dir -r ../requirements.txt
 
-# Copy the entire project into /app
-COPY . .
+# Copy everything so /app/app has app.py, static, etc.
+COPY . ..
 
-# Make /app/app a top-level module path
-# so Python can directly import "decorators.py" and "database.py"
 ENV PYTHONPATH="/app/app"
-
-# Expose port 8000 for FastAPI
 EXPOSE 8000
 
-# Run your FastAPI app (app.py) with Uvicorn on port 8000
-# "app:app" means:
-#  - "app" is the module name (app.py in /app/app)
-#  - "app" is the FastAPI instance inside that file
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+
 
