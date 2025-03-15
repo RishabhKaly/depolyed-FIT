@@ -1,15 +1,15 @@
-# FROM python:3.12-slim
+FROM python:3.12-slim
 
-# WORKDIR /app
+WORKDIR /app
 
-# COPY requirements.txt .
-# RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# # Copy application code
-# COPY ./app .
+# Copy application code
+COPY ./app .
 
-# # Command to run the application
-# CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+# Command to run the application
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
 
 
 # # Use the official Python image as the base
@@ -33,21 +33,21 @@
 
 
 
-# Use the official Python image
-FROM python:3.12-slim
+# # Use the official Python image
+# FROM python:3.12-slim
 
-# Change WORKDIR to /app/app so "static" is found at /app/app/static
-WORKDIR /app/app
+# # Change WORKDIR to /app/app so "static" is found at /app/app/static
+# WORKDIR /app/app
 
-COPY requirements.txt ../
-RUN pip install --no-cache-dir -r ../requirements.txt
+# COPY requirements.txt ../
+# RUN pip install --no-cache-dir -r ../requirements.txt
 
-# Copy everything so /app/app has app.py, static, etc.
-COPY . ..
+# # Copy everything so /app/app has app.py, static, etc.
+# COPY . ..
 
-ENV PYTHONPATH="/app/app"
-EXPOSE 8000
+# ENV PYTHONPATH="/app/app"
 
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "80"]
+
+# CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "80"]
 
 
