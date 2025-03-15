@@ -77,7 +77,8 @@ def get_db_connection(
     )
 
 
-async def setup_database(initial_users: list = None, initial_devices: list = None):
+# async 
+def setup_database(initial_users: list = None, initial_devices: list = None):
     """Creates user and session tables and populates initial user data if provided."""
     connection = None
     cursor = None
