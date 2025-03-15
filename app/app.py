@@ -10,6 +10,7 @@ from typing import Dict
 from contextlib import asynccontextmanager
 from pydantic import BaseModel
 import asyncio
+import asyncio
 import requests
 from datetime import datetime
 from decorators import auth_required
@@ -94,11 +95,8 @@ def get_error_html(username: str) -> str:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Lifespan context manager for managing application startup and shutdown.
-    """
     try:
-        # Run the blocking setup_database in a separate thread
+        # Run the (now synchronous) setup_database in a separate thread
         await asyncio.to_thread(setup_database, INIT_USERS, INIT_DEVICES)
         print("Database setup completed")
         yield
@@ -578,21 +576,22 @@ async def generate_image(request: Request):
 
 
 SENSOR_TYPES = ["temperature"]
+temperature = ["temperature"]
 
-@app.get("/api/{sensor_type}")
+@app.get("/api/temperature")
 def get_sensor_data(
-    sensor_type: str,
+    # sensor_type: str,
     order_by: str = Query(None, alias="order-by"),
     start_date: str = Query(None, alias="start-date"),
     end_date: str = Query(None, alias="end-date")
 ):
-    if sensor_type not in SENSOR_TYPES:
-        raise HTTPException(status_code=404, detail="Invalid sensor type")
+    # if sensor_type not in SENSOR_TYPES:
+    #     raise HTTPException(status_code=404, detail="Invalid sensor type")
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
-    query = f"SELECT * FROM {sensor_type}"
+    query = f"SELECT * FROM temperature"
     conditions = []
     params = []
 
@@ -620,10 +619,10 @@ def get_sensor_data(
 
     return results
 
-@app.post("/api/{sensor_type}")
-def insert_sensor_data(sensor_type: str, data: dict):
-    if sensor_type not in SENSOR_TYPES:
-        raise HTTPException(status_code=404, detail="Invalid sensor type")
+@app.post("/api/temperature")
+def insert_sensor_data(temperature: str, data: dict):
+    # if sensor_type not in SENSOR_TYPES:
+    #     raise HTTPException(status_code=404, detail="Invalid sensor type")
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -635,7 +634,7 @@ def insert_sensor_data(sensor_type: str, data: dict):
     if value is None or unit is None:
         raise HTTPException(status_code=400, detail="Missing required fields: value, unit")
 
-    query = f"INSERT INTO {sensor_type} (timestamp, value, unit) VALUES (%s, %s, %s)"
+    query = f"INSERT INTO temperature (timestamp, value, unit) VALUES (%s, %s, %s)"
     cursor.execute(query, (timestamp, value, unit))
     conn.commit()
     inserted_id = cursor.lastrowid
@@ -644,8 +643,8 @@ def insert_sensor_data(sensor_type: str, data: dict):
     conn.close()
     return {"id": inserted_id}
 
-@app.websocket("/ws/sensor/{sensor_type}")
-async def websocket_endpoint(websocket: WebSocket, sensor_type: str):
+@app.websocket("/ws/sensor/temperature")
+async def websocket_endpoint(websocket: WebSocket, temperature: str):
     await websocket.accept()
     active_connections.add(websocket)
 
@@ -655,7 +654,7 @@ async def websocket_endpoint(websocket: WebSocket, sensor_type: str):
             conn = get_db_connection()
             cursor = conn.cursor(dictionary=True)
 
-            query = f"SELECT * FROM {sensor_type} ORDER BY timestamp DESC LIMIT 10"
+            query = f"SELECT * FROM temperature ORDER BY timestamp DESC LIMIT 10"
             cursor.execute(query)
             results = cursor.fetchall()
 
@@ -687,55 +686,55 @@ async def websocket_endpoint(websocket: WebSocket, sensor_type: str):
 
 
 
-@app.put("/api/{sensor_type}/{id}")
-def update_sensor_data(sensor_type: str, id: int, data: dict):
-    if sensor_type not in SENSOR_TYPES:
-        raise HTTPException(status_code=404, detail="Invalid sensor type")
+# @app.put("/api/{sensor_type}/{id}")
+# def update_sensor_data(sensor_type: str, id: int, data: dict):
+#     # if sensor_type not in SENSOR_TYPES:
+#     #     raise HTTPException(status_code=404, detail="Invalid sensor type")
 
-    conn = get_db_connection()
-    cursor = conn.cursor()
+#     conn = get_db_connection()
+#     cursor = conn.cursor()
 
-    update_fields = []
-    params = []
+#     update_fields = []
+#     params = []
 
-    if "value" in data:
-        update_fields.append("value = %s")
-        params.append(data["value"])
-    if "unit" in data:
-        update_fields.append("unit = %s")
-        params.append(data["unit"])
-    if "timestamp" in data:
-        update_fields.append("timestamp = %s")
-        params.append(data["timestamp"])
+#     if "value" in data:
+#         update_fields.append("value = %s")
+#         params.append(data["value"])
+#     if "unit" in data:
+#         update_fields.append("unit = %s")
+#         params.append(data["unit"])
+#     if "timestamp" in data:
+#         update_fields.append("timestamp = %s")
+#         params.append(data["timestamp"])
 
-    if not update_fields:
-        raise HTTPException(status_code=400, detail="No fields provided for update")
+#     if not update_fields:
+#         raise HTTPException(status_code=400, detail="No fields provided for update")
 
-    params.append(id)
-    query = f"UPDATE {sensor_type} SET {', '.join(update_fields)} WHERE id = %s"
+#     params.append(id)
+#     query = f"UPDATE {sensor_type} SET {', '.join(update_fields)} WHERE id = %s"
 
-    cursor.execute(query, tuple(params))
-    conn.commit()
+#     cursor.execute(query, tuple(params))
+#     conn.commit()
 
-    cursor.close()
-    conn.close()
-    return {"message": "Data updated successfully"}
+#     cursor.close()
+#     conn.close()
+#     return {"message": "Data updated successfully"}
 
-@app.delete("/api/{sensor_type}/{id}")
-def delete_sensor_data(sensor_type: str, id: int):
-    if sensor_type not in SENSOR_TYPES:
-        raise HTTPException(status_code=404, detail="Invalid sensor type")
+# @app.delete("/api/{sensor_type}/{id}")
+# def delete_sensor_data(sensor_type: str, id: int):
+#     # if sensor_type not in SENSOR_TYPES:
+#     #     raise HTTPException(status_code=404, detail="Invalid sensor type")
 
-    conn = get_db_connection()
-    cursor = conn.cursor()
+#     conn = get_db_connection()
+#     cursor = conn.cursor()
 
-    query = f"DELETE FROM {sensor_type} WHERE id = %s"
-    cursor.execute(query, (id,))
-    conn.commit()
+#     query = f"DELETE FROM {sensor_type} WHERE id = %s"
+#     cursor.execute(query, (id,))
+#     conn.commit()
 
-    cursor.close()
-    conn.close()
-    return {"message": "Data deleted successfully"}
+#     cursor.close()
+#     conn.close()
+#     return {"message": "Data deleted successfully"}
 
 
 
