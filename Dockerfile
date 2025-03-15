@@ -11,16 +11,22 @@
 # # Command to run the application
 # CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
 
-FROM python:3.9
 
-WORKDIR /code
+# Use the official Python image as the base
+FROM python:3.12-slim
 
-COPY ./requirements.txt /code/requirements.txt
+# Set the working directory inside the container
+WORKDIR /app
 
-RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
+# Copy and install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# COPY ./app /code/app
+# Copy the entire application code
+COPY . .
 
-COPY ./sample /code/sample
+# Expose the port for FastAPI
+EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Run FastAPI using Uvicorn
+CMD ["uvicorn", "app.app:app", "--host", "0.0.0.0", "--port", "8000"]
